@@ -35,7 +35,6 @@ const t = {
   accent:'#6c63ff', green:'#22d07a', orange:'#ff8c42', red:'#ff4d6d',
   text:'#f0f0ff', muted:'#8888aa', dim:'#555570'
 };
-const ANTHROPIC_KEY = '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'
 const GOALS = { calories:1950, protein:110, carbs:220, fat:60 };
 const TARGET = 78;
 
@@ -46,20 +45,23 @@ const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
 // ── AI food search ─────────────────────────────────────────────
 async function searchFood(query) {
-  const prompt = `You are a nutrition database. For "${query}", return ONLY a JSON array (no markdown) of up to 4 foods with data per 100g. Include Indian foods if relevant. Format: [{"name":"Food","calories":150,"protein":5,"carbs":20,"fat":6}]. Only the JSON array.`;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:600, messages:[{role:'user',content:prompt}] })
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true
+  const GEMINI_KEY = 'AIzaSyASY3kA_SJWts_NjLbFkM9JsLXV0-LBjQ0'; // paste your key here
+  const prompt = `You are a nutrition database. For "${query}", return ONLY a JSON array (no markdown) of up to 4 foods with data per 100g. Include Indian foods if relevant. Format: [{"name":"Food","calories":150,"protein":5,"carbs":20,"fat":6}]. Only the JSON array, nothing else.`;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.1 }
+      })
     }
-  });
+  );
   const data = await res.json();
-  const text = data.content?.find(b => b.type==='text')?.text || '[]';
-  return JSON.parse(text.replace(/```json|```/g,'').trim());
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+  return JSON.parse(text.replace(/```json|```/g, '').trim());
 }
 
 // ── Shared styles ──────────────────────────────────────────────
